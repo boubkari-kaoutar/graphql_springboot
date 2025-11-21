@@ -2,6 +2,7 @@ package com.tp.graphql_springboot.entities;
 
 import jakarta.persistence.*;
 import java.util.Date;
+import java.util.List;
 
 @Entity
 public class Compte {
@@ -15,6 +16,9 @@ public class Compte {
 
     @Enumerated(EnumType.STRING)
     private TypeCompte type;
+
+    @OneToMany(mappedBy = "compte", fetch = FetchType.LAZY)
+    private List<Transaction> transactions;
 
     // Constructeur par défaut
     public Compte() {
@@ -59,6 +63,14 @@ public class Compte {
 
     public void setType(TypeCompte type) {
         this.type = type;
+    }
+
+    public List<Transaction> getTransactions() {
+        return transactions;
+    }
+
+    public void setTransactions(List<Transaction> transactions) {
+        this.transactions = transactions;
     }
 
     // toString
