@@ -13,8 +13,6 @@ import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.stereotype.Controller;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -45,17 +43,18 @@ public class CompteControllerGraphQL {
         Compte newCompte = new Compte();
         newCompte.setSolde(compte.getSolde());
         newCompte.setType(compte.getType());
-
-        // Conversion de String vers Date
-        try {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-            Date date = sdf.parse(compte.getDateCreation());
-            newCompte.setDateCreation(date);
-        } catch (ParseException e) {
-            throw new RuntimeException("Format de date invalide. Utilisez le format: yyyy-MM-dd");
-        }
+        newCompte.setDateCreation(new Date()); // Date automatique
 
         return compteRepository.save(newCompte);
+    }
+
+    @MutationMapping
+    public boolean deleteCompte(@Argument Long id) {
+        if (compteRepository.existsById(id)) {
+            compteRepository.deleteById(id);
+            return true;
+        }
+        throw new RuntimeException("Compte not found");
     }
 
     @QueryMapping
@@ -74,24 +73,26 @@ public class CompteControllerGraphQL {
     // ===== MÉTHODES POUR LES TRANSACTIONS =====
 
     @MutationMapping
-    public Transaction addTransaction(@Argument TransactionRequest transaction) {
-        Compte compte = compteRepository.findById(transaction.getCompteId())
+    public Transaction addTransaction(@Argument TransactionRequest transactionRequest) {
+        Compte compte = compteRepository.findById(transactionRequest.getCompteId())
                 .orElseThrow(() -> new RuntimeException("Compte not found"));
 
         Transaction newTransaction = new Transaction();
-        newTransaction.setMontant(transaction.getMontant());
-        newTransaction.setType(transaction.getType());
+        newTransaction.setMontant(transactionRequest.getMontant());
+        newTransaction.setType(transactionRequest.getType());
+        newTransaction.setDate(new Date()); // Date automatique
         newTransaction.setCompte(compte);
 
-        // Conversion de String vers Date (accepte / et -)
-        try {
-            String dateString = transaction.getDate().replace("/", "-");
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-            Date date = sdf.parse(dateString);
-            newTransaction.setDate(date);
-        } catch (ParseException e) {
-            throw new RuntimeException("Format de date invalide. Utilisez: yyyy-MM-dd ou yyyy/MM/dd");
+        // Mise à jour du solde du compte
+        if (transactionRequest.getType() == TypeTransaction.DEPOT) {
+            compte.setSolde(compte.getSolde() + transactionRequest.getMontant());
+        } else {
+            if (compte.getSolde() < transactionRequest.getMontant()) {
+                throw new RuntimeException("Solde insuffisant pour effectuer ce retrait");
+            }
+            compte.setSolde(compte.getSolde() - transactionRequest.getMontant());
         }
+        compteRepository.save(compte);
 
         return transactionRepository.save(newTransaction);
     }

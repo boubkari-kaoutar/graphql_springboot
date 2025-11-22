@@ -10,7 +10,7 @@ enum TypeTransaction {
 
 type Query {
     allComptes: [Compte]
-    compteById(id : ID):Compte
+    compteById(id : ID): Compte
     totalSolde: SoldeStats
     compteTransactions(id: ID): [Transaction]
     allTransactions: [Transaction]
@@ -34,20 +34,19 @@ type Transaction {
 }
 
 type Mutation {
-    saveCompte(compte:CompteRequest):Compte
-    addTransaction(transaction: TransactionRequest): Transaction
+    saveCompte(compte: CompteRequest): Compte
+    deleteCompte(id: ID): Boolean
+    addTransaction(transactionRequest: TransactionRequest): Transaction
 }
 
 input CompteRequest {
     solde: Float
-    dateCreation: String
     type: TypeCompte
 }
 
 input TransactionRequest {
     compteId: ID
     montant: Float
-    date: String
     type: TypeTransaction
 }
 
